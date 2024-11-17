@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel With Us</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 500px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-600 p-4 text-white flex justify-between items-center">
+        <h1 class="text-xl font-bold">Travel With Us</h1>
+        <div class="space-x-4">
+            <a href="#" class="hover:text-yellow-300">Home</a>
+            <a href="./aboutUs.html" class="hover:text-yellow-300">About Us</a>
+            <a href="./contactUs.html" class="hover:text-yellow-300">Contact Us</a>
+            <input type="search" id="search-bar" class="rounded p-1 text-black" placeholder="Search...">
+            <button id="search-btn" class="bg-yellow-500 px-4 py-2 rounded hover:bg-yellow-600">Search</button>
+            <button id="clear-btn" class="bg-gray-500 px-4 py-2 rounded hover:bg-gray-600">Clear</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-4 text-center">
+        <h1 class="text-3xl font-bold mt-4">EXPLORE DREAM DESTINATIONS</h1>
+        <p class="mt-2 text-lg">Explore diverse cultures and landscapes while pursuing your dream destinations.</p>
+        <button id="book-now-btn" class="bg-green-500 px-6 py-3 rounded text-white mt-6 hover:bg-green-600">Book Now</button>
+        <div id="recommendations" class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Recommendations will be shown here -->
+        </div>
+    </div>
+
+    <!-- Modal (for Book Now button) -->
+    <div id="modal" class="modal flex">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold">Thank You!</h2>
+            <p class="mt-4">Thank you for your interest! We will contact you soon.</p>
+            <button id="close-modal-btn" class="bg-red-500 px-4 py-2 mt-4 rounded text-white hover:bg-red-600">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let data;
+
+        // Fetching the JSON file
+        fetch('travel_recommendation_api.json')
+            .then(response => response.json())
+            .then(fetchedData => {
+                data = fetchedData;
+                console.log('Fetched Data:', data);  // Log the data to check if it's fetched correctly
+            })
+            .catch(error => console.log('Error fetching the data:', error));
+
+        // Search button functionality
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const keyword = document.getElementById('search-bar').value.toLowerCase();
+            const recommendationsContainer = document.getElementById('recommendations');
+            recommendationsContainer.innerHTML = '';  // Clear previous results
+
+            if (keyword) {
+                if (keyword.includes('beach')) {
+                    displayRecommendations(data.beaches, 'beach', recommendationsContainer);
+                } else if (keyword.includes('temple')) {
+                    displayRecommendations(data.temples, 'temple', recommendationsContainer);
+                } else if (keyword.includes('country')) {
+                    displayRecommendations(data.countries, 'country', recommendationsContainer);
+                } else {
+                    recommendationsContainer.innerHTML = `<p>No results found for "${keyword}".</p>`;
+                }
+            }
+        });
+
+        // Clear button functionality (Task 9)
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            document.getElementById('search-bar').value = '';
+            document.getElementById('recommendations').innerHTML = '';
+        });
+
+        // Function to display recommendations (Task 8)
+        function displayRecommendations(items, type, container) {
+            let count = 0;
+            items.forEach(item => {
+                if (count < 2) {  // Limit to 2 items for each type
+                    const itemDiv = document.createElement('div');
+                    const itemTitle = document.createElement('h2');
+                    const itemDescription = document.createElement('p');
+                    const itemImage = document.createElement('img');
+                    const itemTime = document.createElement('p');  // For displaying time in the country
+
+                    itemTitle.textContent = item.name;
+                    itemDescription.textContent = item.description;
+                    itemImage.src = item.imageUrl;
+                    itemImage.alt = item.name;
+                    itemImage.classList.add('rounded', 'w-full', 'h-48', 'object-cover');
+
+                    // Fetch the current time for the country (Task 10)
+                    if (type === 'country') {
+                        fetchTimeInCountry(item.name, itemTime);
+                    }
+
+                    itemDiv.classList.add('border', 'rounded', 'shadow-lg', 'overflow-hidden');
+                    itemDiv.appendChild(itemImage);
+                    itemDiv.appendChild(itemTitle);
+                    itemDiv.appendChild(itemDescription);
+                    itemDiv.appendChild(itemTime);  // Add time info
+                    container.appendChild(itemDiv);
+
+                    count++;
+                }
+            });
+        }
+
+        // Fetch time for the recommended country (Task 10)
+        function fetchTimeInCountry(countryName, timeElement) {
+            const timeZoneMapping = {
+                'Australia': 'Australia/Sydney',
+                'Japan': 'Asia/Tokyo',
+                'Brazil': 'America/Sao_Paulo',
+                'Cambodia': 'Asia/Phnom_Penh',
+                'India': 'Asia/Kolkata',
+                'French Polynesia': 'Pacific/Tahiti'
+            };
+
+            const timezone = timeZoneMapping[countryName] || 'UTC';
+            const apiUrl = `http://worldtimeapi.org/api/timezone/${timezone}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    timeElement.textContent = `Current time in ${countryName}: ${data.datetime}`;
+                })
+                .catch(error => {
+                    timeElement.textContent = 'Time unavailable';
+                });
+        }
+
+        // Book Now button functionality (Task 8)
+        document.getElementById('book-now-btn').addEventListener('click', () => {
+            document.getElementById('modal').style.display = 'flex';
+        });
+
+        // Close Modal functionality
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            document.getElementById('modal').style.display = 'none';
+        });
+    </script>
+
+</body>
+</html>
